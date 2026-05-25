@@ -62,4 +62,4 @@ data/
 2. Chunks are stored in a local Chroma database.
 3. Each question retrieves the most relevant chunks.
 4. The tutor prompt includes subject/topic/level, excerpts, and recent chat history.
-5. The LLM replies as a step-by-step tutor grounded in those excerpts.
+5. The LLM replies as a step-by-step tutor grounded in those excepts.
