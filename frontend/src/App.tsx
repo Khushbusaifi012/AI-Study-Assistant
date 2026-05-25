@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { fetchFiles, indexFile, removeIndexedFile, sendChat } from "./api";
 import ConfirmModal from "./ConfirmModal";
 import { renderMarkdown } from "./markdown";
+import { getStoredTheme, toggleTheme, type Theme } from "./theme";
 import type { Message, StudyContext } from "./types";
 import { LEVELS, SUGGESTIONS } from "./types";
 
@@ -36,6 +37,7 @@ export default function App() {
   const [confirm, setConfirm] = useState<ConfirmState | null>(null);
   const [successAlert, setSuccessAlert] = useState<AlertState | null>(null);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [theme, setTheme] = useState<Theme>(getStoredTheme);
   const fileRef = useRef<HTMLInputElement>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const chatSessionRef = useRef(0);
@@ -200,8 +202,15 @@ export default function App() {
     <div className="app">
       <aside className="sidebar">
         <div className="brand">
-          <h1>Study Assistant</h1>
-          <p>Upload · Index · Ask</p>
+          <div className="brand-row">
+            <span className="brand-logo" aria-hidden>
+              SA
+            </span>
+            <div>
+              <h1>Study Assistant</h1>
+              <p>Upload · Index · Ask</p>
+            </div>
+          </div>
         </div>
 
         <div className="panel">
@@ -336,25 +345,65 @@ export default function App() {
       </aside>
 
       <main className="main">
+        <div className="main-topbar">
+          <div
+            className={`status-pill${files.length ? " status-pill--ready" : ""}`}
+          >
+            <span className="status-dot" />
+            {files.length
+              ? `${files.length} material${files.length > 1 ? "s" : ""} indexed`
+              : "Upload & index a PDF to start"}
+          </div>
+          <button
+            type="button"
+            className="theme-toggle theme-toggle--bar"
+            onClick={() => setTheme((t) => toggleTheme(t))}
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Light mode" : "Dark mode"}
+          >
+            <span className="theme-toggle-icon" aria-hidden>
+              {theme === "dark" ? "☀" : "☾"}
+            </span>
+            <span className="theme-toggle-label">
+              {theme === "dark" ? "Light" : "Dark"}
+            </span>
+          </button>
+        </div>
+
         <header className="hero">
-          <span className="hero-tag">React · RAG</span>
-          <h2>Study Assistant</h2>
-          <p>Context-aware doubt solver grounded in your notes and PDFs.</p>
+          <span className="hero-tag">AI · RAG · PDF</span>
+          <h2>Your personal study tutor</h2>
+          <p>Answers grounded in your uploaded notes — set subject & topic in the sidebar.</p>
         </header>
 
         <div className="stats">
-          <div className="stat">
-            <div className="stat-label">Subject</div>
-            <div className="stat-value">{ctx.subject || "—"}</div>
+          <div className="stat stat--subject">
+            <span className="stat-icon" aria-hidden>
+              ◈
+            </span>
+            <div>
+              <div className="stat-label">Subject</div>
+              <div className="stat-value">{ctx.subject || "—"}</div>
+            </div>
           </div>
-          <div className="stat">
-            <div className="stat-label">Topic</div>
-            <div className="stat-value">{ctx.topic || "—"}</div>
+          <div className="stat stat--topic">
+            <span className="stat-icon" aria-hidden>
+              ◉
+            </span>
+            <div>
+              <div className="stat-label">Topic</div>
+              <div className="stat-value">{ctx.topic || "—"}</div>
+            </div>
           </div>
-          <div className="stat">
-            <div className="stat-label">Materials</div>
-            <div className="stat-value">
-              {files.length ? `${files.length} ready` : "None"}
+          <div className="stat stat--materials">
+            <span className="stat-icon" aria-hidden>
+              ◫
+            </span>
+            <div>
+              <div className="stat-label">Materials</div>
+              <div className="stat-value">
+                {files.length ? `${files.length} ready` : "None"}
+              </div>
             </div>
           </div>
         </div>
@@ -369,6 +418,17 @@ export default function App() {
             {messages.length === 0 && !loading && (
               <>
                 <div className="welcome">
+                  <div className="welcome-icon" aria-hidden>
+                    <svg viewBox="0 0 48 48" fill="none">
+                      <circle cx="24" cy="24" r="22" stroke="currentColor" strokeWidth="2" opacity="0.35" />
+                      <path
+                        d="M16 28h16M20 20h8M22 14h4"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </div>
                   <h3>Start learning</h3>
                   <p>Index your PDF in the sidebar, then ask below.</p>
                   <div className="steps">
@@ -383,6 +443,7 @@ export default function App() {
                     </span>
                   </div>
                 </div>
+                <p className="suggestions-title">Try asking</p>
                 <div className="suggestions">
                   {SUGGESTIONS.map((s) => (
                     <button
@@ -391,6 +452,9 @@ export default function App() {
                       className="suggestion-btn"
                       onClick={() => ask(s)}
                     >
+                      <span className="suggestion-arrow" aria-hidden>
+                        →
+                      </span>
                       {s}
                     </button>
                   ))}
@@ -399,11 +463,18 @@ export default function App() {
             )}
 
             {messages.map((msg) => (
-              <div key={msg.id} className="message-group">
+              <div
+                key={msg.id}
+                className={`message-group message-group--${msg.role}`}
+              >
                 {msg.role === "user" ? (
-                  <div className="bubble user">{msg.content}</div>
+                  <>
+                    <span className="msg-label">You</span>
+                    <div className="bubble user">{msg.content}</div>
+                  </>
                 ) : (
                   <>
+                    <span className="msg-label">Assistant</span>
                     <div
                       className="bubble assistant"
                       dangerouslySetInnerHTML={{
@@ -428,10 +499,13 @@ export default function App() {
             ))}
 
             {loading && (
-              <div className="typing">
-                <span />
-                <span />
-                <span />
+              <div className="message-group message-group--assistant">
+                <span className="msg-label">Assistant</span>
+                <div className="typing" aria-label="Thinking">
+                  <span />
+                  <span />
+                  <span />
+                </div>
               </div>
             )}
             <div ref={bottomRef} />
@@ -450,14 +524,31 @@ export default function App() {
               placeholder="Ask anything from your study material…"
               disabled={loading}
             />
-            <button type="submit" disabled={loading || !input.trim()}>
-              Send
+            <button
+              type="submit"
+              className="send-btn"
+              disabled={loading || !input.trim()}
+              aria-label="Send message"
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden>
+                <path
+                  d="M3.4 20.6l17.2-8.6L3.4 3.4l2.9 6.8 6.8 2.1-6.8 2.1-2.9 6.8z"
+                  fill="currentColor"
+                />
+              </svg>
             </button>
           </form>
         </section>
       </main>
 
-      {toast && <div className={`toast ${toast.type}`}>{toast.text}</div>}
+      {toast && (
+        <div className={`toast ${toast.type}`} role="status">
+          <span className="toast-icon" aria-hidden>
+            {toast.type === "success" ? "✓" : "!"}
+          </span>
+          {toast.text}
+        </div>
+      )}
 
       <ConfirmModal
         open={confirm !== null}
