@@ -10,4 +10,5 @@ data/chroma/*
 .streamlit/secrets.toml
 frontend/node_modules/
 frontend/dist/
-.git
+.env.example
+.env.local
