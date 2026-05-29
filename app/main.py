@@ -9,6 +9,7 @@ from app.chat.memory import init_session
 from app.chat.tutor import ask_tutor
 from app.config import USE_LOCAL_EMBEDDINGS
 from app.rag.ingest import ingest_file, list_indexed_files
+from app.rag.suggestions import generate_suggestions
 from app.ui.styles import (
     close_chat_panel,
     inject_styles,
@@ -21,12 +22,6 @@ from app.ui.styles import (
 
 LEVELS = ["Middle school", "High school", "Undergraduate", "Competitive exam"]
 
-SUGGESTED_QUESTIONS = [
-    "What are the types of functions?",
-    "What are the types of arguments?",
-    "What is a lambda function?",
-    "Difference between local and global variables?",
-]
 
 st.set_page_config(
     page_title="Study Assistant",
@@ -136,8 +131,13 @@ def _render_sidebar():
 
 def _render_suggestions():
     st.markdown("**Quick questions**")
+    questions = generate_suggestions(
+        subject=st.session_state.subject,
+        topic=st.session_state.topic,
+        limit=4,
+    )
     cols = st.columns(2)
-    for i, question in enumerate(SUGGESTED_QUESTIONS):
+    for i, question in enumerate(questions):
         with cols[i % 2]:
             if st.button(question, use_container_width=True, key=f"suggest_{i}"):
                 st.session_state.pending_prompt = question

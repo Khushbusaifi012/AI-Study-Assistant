@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field
 from app.chat.tutor import ask_tutor
 from app.config import USE_LOCAL_EMBEDDINGS
 from app.rag.ingest import ingest_file, list_indexed_files, remove_indexed_file
+from app.rag.suggestions import generate_suggestions
 
 app = FastAPI(title="Study Assistant API", version="1.0.0")
 
@@ -67,6 +68,17 @@ def config():
 @app.get("/api/files")
 def files():
     return {"files": list_indexed_files()}
+
+
+@app.get("/api/suggestions")
+def suggestions(subject: str = "", topic: str = ""):
+    return {
+        "suggestions": generate_suggestions(
+            subject=subject,
+            topic=topic,
+            limit=4,
+        )
+    }
 
 
 @app.delete("/api/files/{filename:path}")

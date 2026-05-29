@@ -1,10 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { fetchFiles, indexFile, removeIndexedFile, sendChat } from "./api";
+import {
+  fetchFiles,
+  fetchSuggestions,
+  indexFile,
+  removeIndexedFile,
+  sendChat,
+} from "./api";
 import ConfirmModal from "./ConfirmModal";
 import { renderMarkdown } from "./markdown";
 import { getStoredTheme, toggleTheme, type Theme } from "./theme";
 import type { Message, StudyContext } from "./types";
-import { LEVELS, SUGGESTIONS } from "./types";
+import { DEFAULT_SUGGESTIONS, LEVELS } from "./types";
 
 type ConfirmState = {
   title: string;
@@ -29,6 +35,7 @@ const defaultContext: StudyContext = {
 export default function App() {
   const [ctx, setCtx] = useState<StudyContext>(defaultContext);
   const [files, setFiles] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>(DEFAULT_SUGGESTIONS);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -67,9 +74,22 @@ export default function App() {
     }
   }, []);
 
+  const refreshSuggestions = useCallback(async () => {
+    try {
+      const next = await fetchSuggestions(ctx);
+      setSuggestions(next.length > 0 ? next : DEFAULT_SUGGESTIONS);
+    } catch {
+      setSuggestions(DEFAULT_SUGGESTIONS);
+    }
+  }, [ctx]);
+
   useEffect(() => {
     refreshFiles();
   }, [refreshFiles]);
+
+  useEffect(() => {
+    void refreshSuggestions();
+  }, [refreshSuggestions, files]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -138,6 +158,7 @@ export default function App() {
       setPendingFile(null);
       if (fileRef.current) fileRef.current.value = "";
       await refreshFiles();
+      await refreshSuggestions();
     } catch (e) {
       showToast("error", e instanceof Error ? e.message : "Index failed");
     } finally {
@@ -443,9 +464,11 @@ export default function App() {
                     </span>
                   </div>
                 </div>
-                <p className="suggestions-title">Try asking</p>
+                <p className="suggestions-title">
+                  {files.length > 0 ? "Try asking (from your PDF)" : "Try asking"}
+                </p>
                 <div className="suggestions">
-                  {SUGGESTIONS.map((s) => (
+                  {suggestions.map((s) => (
                     <button
                       key={s}
                       type="button"

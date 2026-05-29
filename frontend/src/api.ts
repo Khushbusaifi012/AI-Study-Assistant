@@ -59,3 +59,14 @@ export async function fetchConfig(): Promise<{ local_embeddings: boolean }> {
   if (!res.ok) return { local_embeddings: true };
   return res.json();
 }
+
+export async function fetchSuggestions(ctx: StudyContext): Promise<string[]> {
+  const params = new URLSearchParams({
+    subject: ctx.subject,
+    topic: ctx.topic,
+  });
+  const res = await fetch(`${API}/suggestions?${params}`);
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.suggestions ?? [];
+}

@@ -26,9 +26,10 @@ export const LEVELS = [
   "Competitive exam",
 ] as const;
 
-export const SUGGESTIONS = [
-  "What are the types of functions?",
-  "What are the types of arguments?",
-  "What is a lambda function?",
-  "Difference between local and global variables?",
+/** Shown only before any PDF is indexed */
+export const DEFAULT_SUGGESTIONS = [
+  "What are the main topics in my notes?",
+  "Summarize the key points from my material.",
+  "What is the most important concept here?",
+  "Give me a practice question from my notes.",
 ];
