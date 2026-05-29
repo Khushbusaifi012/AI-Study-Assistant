@@ -36,7 +36,7 @@
   --toast-success-text: #15803d;
   --toast-success-border: #bbf7d0;
   --suggestion-hover-border: #a5b4fc;
-  --focus-ring: rgba(99, 102, 241, 0.15);
+  --focus-ring: rgba(99, 102, 241, 0.15); 
   --theme-toggle-bg: rgba(255, 255, 255, 0.2);
   --theme-toggle-border: rgba(255, 255, 255, 0.3);
   --theme-toggle-hover: rgba(255, 255, 255, 0.28);
@@ -790,6 +790,12 @@ body {
 
 .message-group--user .msg-label {
   text-align: right;
+}
+
+.offline-badge {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin: 0.15rem 0 0.35rem;
 }
 
 @keyframes msgIn {

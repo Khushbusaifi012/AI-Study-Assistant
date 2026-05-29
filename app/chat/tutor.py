@@ -230,9 +230,73 @@ def function_name(parameters):   # def is mandatory
 """
 
 
-def _summary_from_notes(question: str, context: str) -> str | None:
+def _summary_important_concepts(context: str, topic: str) -> str:
+    ctx = context.lower()
+    topic_label = topic.strip() or "your notes"
+    bullets: list[str] = []
+
+    if "reusab" in ctx:
+        bullets.append(
+            "**Code reusability** — define statements once as a function and call them many times instead of rewriting."
+        )
+    if "built" in ctx and "user defined" in ctx:
+        bullets.append(
+            "**Types of functions** — **built-in** (come with Python) vs **user-defined** (you write with `def`)."
+        )
+    if "parameter" in ctx or "argument" in ctx:
+        bullets.append(
+            "**Parameters & arguments** — parameters are in the function definition; arguments are values you pass when calling."
+        )
+    if "return" in ctx and "def" in ctx:
+        bullets.append(
+            "**`def` is required; `return` is optional** — `return` sends a value back; without it the function still runs but may return `None`."
+        )
+    if "local" in ctx and "global" in ctx:
+        bullets.append(
+            "**Local vs global variables** — locals live inside a function; globals are declared outside and can be shared (with `global` when needed)."
+        )
+    if "lambda" in ctx:
+        bullets.append(
+            "**Lambda functions** — small anonymous one-expression functions (`lambda args: expression`)."
+        )
+    if "filter" in ctx or "map" in ctx or "reduce" in ctx:
+        bullets.append(
+            "**Higher-order tools** — `filter()`, `map()`, and `reduce()` often work with functions/lambdas."
+        )
+
+    if not bullets:
+        bullets.append(
+            "Your material introduces **Python functions**: why they exist, how to define them, and related topics (parameters, variables, lambda)."
+        )
+
+    lines = "\n".join(f"- {b}" for b in bullets[:6])
+    return f"""### Main ideas from your notes ({topic_label})
+
+{lines}
+
+**Big picture:** Functions group repeated statements into one reusable unit — that is the central idea across this PDF.
+
+---
+"""
+
+
+def _summary_from_notes(question: str, context: str, topic: str = "") -> str | None:
     q = question.lower()
     ctx = context.lower()
+
+    if any(
+        w in q
+        for w in (
+            "important",
+            "main idea",
+            "key concept",
+            "summarize",
+            "summary",
+            "most important",
+        )
+    ):
+        if ctx.strip():
+            return _summary_important_concepts(context, topic)
 
     if "lambda" in q and ("lambda" in ctx or "anonymous" in ctx):
         return _summary_lambda()
@@ -255,35 +319,48 @@ def _summary_from_notes(question: str, context: str) -> str | None:
     return None
 
 
-def _offline_answer(question: str, context: str) -> str:
+def _offline_notice() -> str:
+    return (
+        "> **Note:** AI chat is temporarily unavailable (API quota). "
+        "This answer is built from your indexed PDF.\n\n"
+    )
+
+
+def _offline_answer(
+    question: str,
+    context: str,
+    *,
+    topic: str = "",
+    subject: str = "",
+) -> str:
     indexed = list_indexed_files()
 
     if not context.strip():
         if indexed:
+            hint = topic.strip() or subject.strip() or "your chapter"
             return (
-                "**PDF is indexed**, but no clear match for this exact question. "
-                "Try: `What are types of arguments in Python with examples` — "
-                "or set topic to **Functions** in the sidebar."
+                _offline_notice()
+                + f"**Your PDF is indexed**, but this question did not match any section well. "
+                f"Try asking about **{hint}** (e.g. types of functions, parameters, or lambda)."
             )
         return (
             "**PDF is not indexed yet.** Click **Index PDF (step 2)** in the sidebar, "
             "then ask again."
         )
 
-    summary = _summary_from_notes(question, context)
+    summary = _summary_from_notes(question, context, topic=topic)
     if summary:
         return (
-            summary
-            + "\n\n---\n"
-            + "_From your indexed PDF. Expand **Sources used** for exact lines._"
+            _offline_notice()
+            + summary
+            + "\n_Expand **Sources from your PDF** below for exact excerpts._"
         )
 
-    trimmed = context if len(context) <= 4500 else context[:4500] + "\n\n…"
     return (
-        "**Answer from your indexed PDF** (AI chat unavailable — API quota):\n\n"
-        + trimmed
-        + "\n\n---\n"
-        + f"_Question: {question}_"
+        _offline_notice()
+        + "**Could not format a short summary for this question.** "
+        "Try a specific question (e.g. types of arguments, lambda, local vs global variables). "
+        "Expand **Sources from your PDF** for retrieved excerpts."
     )
 
 
@@ -294,7 +371,11 @@ def ask_tutor(
     topic: str,
     level: str,
 ) -> dict:
-    context, citations = retrieve_context(question)
+    context, citations = retrieve_context(
+        question,
+        subject=subject,
+        topic=topic,
+    )
     history = format_history(messages)
     system = _build_system_prompt(subject, topic, level, context, history)
 
@@ -307,7 +388,12 @@ def ask_tutor(
             answer = _chat_gemini(system, question)
     except Exception as exc:
         if _is_quota_error(exc) or str(exc) == "quota":
-            answer = _offline_answer(question, context)
+            answer = _offline_answer(
+                question,
+                context,
+                topic=topic,
+                subject=subject,
+            )
             offline_mode = True
         else:
             raise

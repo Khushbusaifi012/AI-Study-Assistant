@@ -5,6 +5,7 @@ export interface Message {
   role: Role;
   content: string;
   citations?: Citation[];
+  offlineMode?: boolean;
 }
 
 export interface Citation {

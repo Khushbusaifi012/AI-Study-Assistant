@@ -189,6 +189,7 @@ export default function App() {
           role: "assistant",
           content: res.answer,
           citations: res.citations,
+          offlineMode: res.offline_mode,
         },
       ]);
     } catch (e) {
@@ -498,6 +499,9 @@ export default function App() {
                 ) : (
                   <>
                     <span className="msg-label">Assistant</span>
+                    {msg.offlineMode && (
+                      <p className="offline-badge">Answer from your PDF (AI quota limit)</p>
+                    )}
                     <div
                       className="bubble assistant"
                       dangerouslySetInnerHTML={{

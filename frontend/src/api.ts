@@ -34,7 +34,12 @@ export async function sendChat(
   question: string,
   ctx: StudyContext,
   messages: Message[]
-): Promise<{ answer: string; citations: Citation[]; has_context: boolean }> {
+): Promise<{
+  answer: string;
+  citations: Citation[];
+  has_context: boolean;
+  offline_mode?: boolean;
+}> {
   const res = await fetch(`${API}/chat`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
